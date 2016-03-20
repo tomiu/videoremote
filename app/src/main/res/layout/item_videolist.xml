@@ -1,0 +1,23 @@
+<!-- A CardView that contains a TextView -->
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    android:clickable="true"
+    android:orientation="horizontal"
+    card_view:cardCornerRadius="5dp"
+    card_view:cardUseCompatPadding="true">
+
+    <TextView
+        android:id="@+id/cardview_textview"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        android:layout_centerInParent="true"
+        android:background="?android:selectableItemBackground"
+        android:gravity="center"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        tools:text="BattleStar Galactica S01E01.mkv" />
+</android.support.v7.widget.CardView>
