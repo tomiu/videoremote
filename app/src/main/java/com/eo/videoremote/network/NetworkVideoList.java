@@ -78,7 +78,7 @@ class NetworkVideoList implements VideoList {
             source = path;
 
         String[] authentication = getUserAuthentication();
-        NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, authentication[0], authentication[1]); //TODO password must be somewhere else
+        NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, authentication[0], authentication[1]);
         SmbFile sourceFile = new SmbFile(source, auth);
 
         SmbFile[] files = sourceFile.listFiles();
