@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.eo.videoremote.MainActivity;
 import com.eo.videoremote.R;
 import com.eo.videoremote.interfaces.ThreadCallback;
 import com.eo.videoremote.interfaces.VideoList;
@@ -124,6 +126,11 @@ public class VideoListFragment extends Fragment implements ItemClickSupport.OnIt
 //        mProgressDialog = null;
     }
 
+    void showErrorDialog(Exception exception) {
+        DialogFragment fragment = (DialogFragment) ErrorDialogFragment.newInstance(exception.toString());
+        fragment.show(getFragmentManager(), "errorDialog");
+    }
+
 
     private static class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.ViewHolder> implements ThreadCallback<List<Video>> {
         private static final java.lang.String TAG = VideoListAdapter.class.getSimpleName();
@@ -188,7 +195,7 @@ public class VideoListFragment extends Fragment implements ItemClickSupport.OnIt
                 mDataset.addAll(result);
                 notifyDataSetChanged();
             } else {
-                //TODO
+                mFragment.showErrorDialog(exception);
                 Logger.error(TAG, "", exception);
             }
         }

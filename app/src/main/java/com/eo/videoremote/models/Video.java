@@ -1,6 +1,12 @@
 package com.eo.videoremote.models;
 
+import com.eo.videoremote.interfaces.VideoInput;
+
 import java.io.File;
+import java.io.IOException;
+
+import jcifs.smb.SmbException;
+import jcifs.smb.SmbFile;
 
 /**
  * Created by tom on 17.3.2016.
@@ -10,7 +16,7 @@ public class Video {
     private boolean isDirectory;
     private String name;
 
-    public Video(File file) {
+    public Video (VideoInput file) throws IOException {
         path = file.getPath();
         isDirectory = file.isDirectory();
         name = file.getName();

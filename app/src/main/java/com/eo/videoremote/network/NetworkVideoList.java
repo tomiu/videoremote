@@ -1,7 +1,6 @@
 package com.eo.videoremote.network;
 
 import android.content.Context;
-import android.os.Environment;
 import android.os.Handler;
 import android.text.TextUtils;
 
@@ -9,24 +8,28 @@ import com.eo.videoremote.interfaces.ThreadCallback;
 import com.eo.videoremote.interfaces.VideoInput;
 import com.eo.videoremote.interfaces.VideoList;
 import com.eo.videoremote.models.Video;
-import com.eo.videoremote.utils.Logger;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.Properties;
+
+import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SmbFile;
 
 /**
  * Created by tom on 18.3.2016.
  */
-class MockVideoList implements VideoList {
-    private static final String HOME_DIRECTORY = System.getProperty("user.home");
-    private static final java.lang.String TAG = MockVideoList.class.getSimpleName();
-    private final Random mRandom = new Random();
-    private final Handler mHandler;
+class NetworkVideoList implements VideoList {
+    private static final java.lang.String TAG = NetworkVideoList.class.getSimpleName();
 
-    public MockVideoList(Context context, Handler handler) {
+    private static final String START_IN_PATH = "smb://192.168.64.2/d/torrents/";
+    private final Handler mHandler;
+    private final Context mContext;
+
+    public NetworkVideoList(Context context, Handler handler) {
+        mContext = context;
         mHandler = handler;
     }
 
@@ -38,16 +41,17 @@ class MockVideoList implements VideoList {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
+
                 try {
                     final List<Video> videoList = getVideos(path);
-                    callingHandler.postDelayed(new Runnable() {
+                    callingHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             threadCallback.workerEnd(videoList, null);
                         }
-                    }, 300 + mRandom.nextInt(1000)); // to better mock world scenario
 
-                } catch (final IOException e) {
+                    });
+                } catch (final Exception e) {
                     callingHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -60,28 +64,49 @@ class MockVideoList implements VideoList {
     }
 
     /**
+     * // https://lists.samba.org/archive/jcifs/2007-September/007465.html
      * Gets list of videos
-     * @param path If empty or null, will default to Phone's external storage
+     *
+     * @param path If empty or null, will default to samba share N1/d/torrents
      * @return
      * @throws IOException
      */
     private List<Video> getVideos(String path) throws IOException {
-        final File dir = TextUtils.isEmpty(path) ? Environment.getExternalStorageDirectory() : new File(path);
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            throw new IOException("Could not get directory list from path: " + dir);
-
         final List<Video> videoList = new ArrayList<>();
-        for (File file : files) {
-            if (file.isDirectory() && file.listFiles().length == 0) // dont add empty folders. This will only work if next folder is empty. If next next folder is empty, then the first one will still be returned.
-                continue;
-            videoList.add(new Video(wrap(file)));
+        String source = START_IN_PATH;
+        if (!TextUtils.isEmpty(path))
+            source = path;
+
+        String[] authentication = getUserAuthentication();
+        NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, authentication[0], authentication[1]); //TODO password must be somewhere else
+        SmbFile sourceFile = new SmbFile(source, auth);
+
+        SmbFile[] files = sourceFile.listFiles();
+        for (SmbFile smbFile : files) {
+            videoList.add(new Video(wrap(smbFile)));
         }
 
         return videoList;
     }
 
+    /**
+     * @return String array. An array position 0 is username, on 1 is password
+     * @throws IOException
+     */
+    private String[] getUserAuthentication() throws IOException {
+        String[] fileList = {"passwords.properties"};
+        Properties prop = new Properties();
+        for (int i = fileList.length - 1; i >= 0; i--) {
+            String file = fileList[i];
+            InputStream fileStream = mContext.getAssets().open(file);
+            prop.load(fileStream);
+            fileStream.close();
+        }
+        String username = prop.getProperty("username");
+        String password = prop.getProperty("password");
+
+        return new String[]{username, password};
+    }
 
     /**
      * Wraps it into common interface, VideoInput
@@ -89,7 +114,7 @@ class MockVideoList implements VideoList {
      * @param file
      * @return
      */
-    private VideoInput wrap(final File file) {
+    private VideoInput wrap(final SmbFile file) {
         return new VideoInput() {
             @Override
             public String getPath() {
